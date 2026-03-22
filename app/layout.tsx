@@ -22,7 +22,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "GLaDOS Core — Conversation Monitor",
+  title: "GLaDOS",
   description:
     "Aperture Science Enrichment Center. Your specimen has been processed.",
 };
