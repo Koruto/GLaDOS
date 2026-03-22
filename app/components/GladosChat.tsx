@@ -1,7 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { OPENING_LINE, MAX_TURNS, TYPE_SPEED } from "./glados/constants";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { isEndingReleased } from "./glados/EndingScreen";
+import type { ScrollPinSnapshot } from "./glados/chatScroll";
+import {
+  ERROR_LINE,
+  LOADING_EVALUATING,
+  LOADING_EVALUATING_MS,
+  LOADING_LINE_ROTATE_MS,
+  LOADING_LINES,
+  MAX_TURNS,
+  MIN_LOADING_MS,
+  OPENING_LINE,
+  TYPE_SPEED,
+} from "./glados/constants";
 import {
   ChatMessage,
   DisplayMsg,
@@ -29,19 +47,44 @@ export default function GladosChat() {
   const [testsCompleted, setTestsCompleted] = useState(0);
   const [verdictReady, setVerdictReady] = useState(false);
   const [ending, setEnding] = useState<string | null>(null);
-  const [personScore, setPersonScore] = useState(0);
-  const [resistanceScore, setResistanceScore] = useState(0);
   const [subjectId, setSubjectId] = useState("—");
   const [chamber, setChamber] = useState("—");
   const [coreTemp, setCoreTemp] = useState("—");
+  const [endedPane, setEndedPane] = useState<"verdict" | "transcript">(
+    "verdict"
+  );
 
   const messagesRef = useRef<ChatMessage[]>([]);
+  const phaseRef = useRef(phase);
+  /** Last `[GLADOS_DATA]` block from the API — sent back as `lastData` so the model + clamp logic stay consistent. */
+  const lastDataRef = useRef<Record<string, string> | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+  const followBottomRef = useRef(true);
+  const scrollPinRef = useRef<ScrollPinSnapshot>({ sh: 0, st: 0 });
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const loadingBubbleIdRef = useRef<string | null>(null);
+  const loadingTimersRef = useRef<{
+    timeouts: ReturnType<typeof setTimeout>[];
+    intervals: ReturnType<typeof setInterval>[];
+  }>({ timeouts: [], intervals: [] });
+
+  const clearLoadingTimers = useCallback(() => {
+    loadingTimersRef.current.timeouts.forEach(clearTimeout);
+    loadingTimersRef.current.intervals.forEach(clearInterval);
+    loadingTimersRef.current = { timeouts: [], intervals: [] };
+  }, []);
 
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  useEffect(() => {
+    if (phaseRef.current === "chatting" && phase === "ended") {
+      setEndedPane("verdict");
+    }
+    phaseRef.current = phase;
+  }, [phase]);
 
   // Randomised Aperture telemetry — client-side only to avoid hydration mismatch
   useEffect(() => {
@@ -62,9 +105,6 @@ export default function GladosChat() {
       typewriterRef.current = setInterval(() => {
         i++;
         setOpeningText(OPENING_LINE.slice(0, i));
-        if (scrollRef.current) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
         if (i >= OPENING_LINE.length) {
           setOpeningDone(true);
           if (typewriterRef.current) clearInterval(typewriterRef.current);
@@ -79,12 +119,76 @@ export default function GladosChat() {
     };
   }, [phase]);
 
-  // Scroll to bottom when new display messages arrive
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (followBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
     }
-  }, [displayMsgs]);
+    scrollPinRef.current = { sh: el.scrollHeight, st: el.scrollTop };
+  }, [openingText, displayMsgs]);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    const sentinel = bottomSentinelRef.current;
+    if (!root || !sentinel) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        followBottomRef.current = entry.isIntersecting;
+        const el = scrollRef.current;
+        if (el) {
+          scrollPinRef.current = {
+            sh: el.scrollHeight,
+            st: el.scrollTop,
+          };
+        }
+      },
+      { root, rootMargin: "0px 0px 120px 0px", threshold: 0 }
+    );
+    io.observe(sentinel);
+    return () => io.disconnect();
+  }, [displayMsgs, openingText, endedPane, phase, chatExpanded]);
+
+  /** After "Evaluating..." (500ms), rotate `LOADING_LINES` until the reply arrives. */
+  useEffect(() => {
+    if (!loading) {
+      clearLoadingTimers();
+      loadingBubbleIdRef.current = null;
+      return;
+    }
+    const tid = loadingBubbleIdRef.current;
+    if (!tid) return;
+
+    clearLoadingTimers();
+
+    const tRotate = setTimeout(() => {
+      let i = Math.floor(Math.random() * LOADING_LINES.length);
+      setDisplayMsgs((prev) =>
+        prev.map((m) =>
+          m.id === tid
+            ? { ...m, content: LOADING_LINES[i], isLoading: true }
+            : m
+        )
+      );
+      const iv = setInterval(() => {
+        i = (i + 1) % LOADING_LINES.length;
+        setDisplayMsgs((prev) =>
+          prev.map((m) =>
+            m.id === tid
+              ? { ...m, content: LOADING_LINES[i], isLoading: true }
+              : m
+          )
+        );
+      }, LOADING_LINE_ROTATE_MS);
+      loadingTimersRef.current.intervals.push(iv);
+    }, LOADING_EVALUATING_MS);
+
+    loadingTimersRef.current.timeouts.push(tRotate);
+
+    return () => {
+      clearLoadingTimers();
+    };
+  }, [loading, clearLoadingTimers]);
 
   const sendMessage = useCallback(
     async (userText: string) => {
@@ -112,32 +216,72 @@ export default function GladosChat() {
       ]);
 
       const typingId = `t-${Date.now()}`;
+      loadingBubbleIdRef.current = typingId;
       setDisplayMsgs((prev) => [
         ...prev,
-        { id: typingId, role: "bot", content: "", isTyping: true },
+        {
+          id: typingId,
+          role: "bot",
+          content: LOADING_EVALUATING,
+          isLoading: true,
+        },
       ]);
+
+      const requestAt = Date.now();
+
+      const showFailure = (message: string) => {
+        setMessages(priorThread);
+        setTurns(priorTurns);
+        setDisplayMsgs((prev) => [
+          ...prev.filter((m) => m.id !== typingId),
+          {
+            id: `e-${Date.now()}`,
+            role: "bot",
+            content: message,
+            isFailure: true,
+            retryUserText: trimmed,
+          },
+        ]);
+      };
 
       try {
         const res = await fetch("/api/glados", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: newMessages }),
+          body: JSON.stringify({
+            messages: newMessages,
+            lastData: lastDataRef.current,
+          }),
         });
 
-        const data = (await res.json()) as {
+        const data = (await res.json().catch(() => ({}))) as {
           message?: string;
           data?: Record<string, string> | null;
           error?: string;
+          code?: string;
         };
 
         if (!res.ok || data.error) {
-          throw new Error(data.error ?? "Request failed");
+          const errMsg =
+            res.status === 429 || data.code === "RATE_LIMIT"
+              ? "Rate Limit Exceeded. Try after some time."
+              : typeof data.error === "string"
+                ? data.error
+                : ERROR_LINE;
+          showFailure(errMsg);
+          return;
         }
 
         const reply =
           typeof data.message === "string" && data.message.length > 0
             ? data.message
             : "…";
+
+        const elapsed = Date.now() - requestAt;
+        const waitMore = Math.max(0, MIN_LOADING_MS - elapsed);
+        if (waitMore) {
+          await new Promise((r) => setTimeout(r, waitMore));
+        }
 
         setMessages([
           ...newMessages,
@@ -150,7 +294,12 @@ export default function GladosChat() {
         ]);
 
         const block = data.data;
-        if (block && typeof block === "object") {
+        if (
+          block &&
+          typeof block === "object" &&
+          Object.keys(block).length > 0
+        ) {
+          lastDataRef.current = block;
           const p = parseProbabilityPct(block.PROBABILITY);
           if (p !== null) setProb(Math.max(0, Math.min(100, p)));
 
@@ -158,19 +307,17 @@ export default function GladosChat() {
           setVerdictReady(parseBoolString(block.VERDICT_READY));
           const endRaw = (block.ENDING ?? "").trim();
           setEnding(endRaw === "" || endRaw === "NONE" ? null : endRaw);
-          setPersonScore(parseIntField(block.PERSON_SCORE, 0));
-          setResistanceScore(parseIntField(block.RESISTANCE_SCORE, 0));
         }
 
-        const vReady = block ? parseBoolString(block.VERDICT_READY) : false;
-        const endCode = block ? (block.ENDING ?? "").trim() : "";
-        const endingLocked =
-          Boolean(endCode) && endCode !== "NONE";
+        const snapshot = lastDataRef.current;
+        const vReady = snapshot
+          ? parseBoolString(snapshot.VERDICT_READY)
+          : false;
+        const endCode = snapshot ? (snapshot.ENDING ?? "").trim() : "";
+        const endingLocked = Boolean(endCode) && endCode !== "NONE";
 
         const shouldEnd =
-          vReady ||
-          endingLocked ||
-          nextTurns >= MAX_TURNS;
+          vReady || endingLocked || nextTurns >= MAX_TURNS;
 
         if (shouldEnd) {
           setTimeout(
@@ -179,26 +326,17 @@ export default function GladosChat() {
           );
         }
       } catch {
-        setMessages(priorThread);
-        setTurns(priorTurns);
-        setDisplayMsgs((prev) => [
-          ...prev.filter((m) => m.id !== typingId && m.id !== userMsgId),
-          {
-            id: `e-${Date.now()}`,
-            role: "bot",
-            content:
-              "The Enrichment Center apologizes for this interruption. Please note that system failures are not part of the test. The test has been paused. The neurotoxin has not.",
-          },
-        ]);
+        showFailure(ERROR_LINE);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     },
     [loading, turns, openingDone]
   );
 
   const isEnded = phase === "ended";
-  const canSend = openingDone && !loading && !isEnded && turns < MAX_TURNS;
+  const canSend =
+    openingDone && !loading && !isEnded && turns < MAX_TURNS;
 
   return (
     <div className="relative z-5 flex h-full min-h-0 flex-col bg-background text-foreground">
@@ -266,17 +404,26 @@ export default function GladosChat() {
         {/* ── Chat ── */}
         <div
           className={`flex w-full min-h-0 flex-1 flex-col items-center overflow-hidden transition-chat px-4 sm:px-6 ${phase !== "landing"
-            ? "max-h-screen opacity-100 pt-5 sm:pt-8 pb-11"
+            ? "max-h-screen opacity-100 pt-5 sm:pt-8 pb-14 sm:pb-16"
             : "max-h-0 opacity-0 pb-0 pointer-events-none"
             }`}
         >
           {/* Desktop header — single inline row */}
-          <div className="hidden sm:flex w-full max-w-[780px] items-center justify-center gap-[14px] text-[9px] tracking-[0.22em] mb-4 text-blue anim-fadein-07">
+          <div
+            className={`hidden sm:flex w-full max-w-[780px] items-center justify-center gap-[14px] text-[9px] tracking-[0.22em] mb-4 anim-fadein-07 ${isEnded ? "text-[#8b6914]" : "text-blue"
+              }`}
+          >
             <span>APERTURE SCIENCE</span>
             <span className="text-border">—</span>
             <span>ENRICHMENT CENTER</span>
             <span className="text-border">—</span>
-            <span>SBJ: {subjectId}</span>
+            {isEnded ? (
+              <span className="font-medium uppercase tracking-[0.2em]">
+                Status: concluded
+              </span>
+            ) : (
+              <span>SBJ: {subjectId}</span>
+            )}
           </div>
 
           {/* Mobile header — two-line stacked */}
@@ -284,8 +431,13 @@ export default function GladosChat() {
             <p className="font-mono text-[8px] tracking-[0.22em] text-blue uppercase">
               APERTURE SCIENCE ENRICHMENT CENTER
             </p>
-            <p className="mt-1 font-mono text-[12px] tracking-[0.06em] text-foreground">
-              SUBJECT #{subjectId}
+            <p
+              className={`mt-1 font-mono text-[12px] tracking-[0.06em] ${isEnded ? "text-[#8b6914]" : "text-foreground"
+                }`}
+            >
+              {isEnded
+                ? "EVALUATION CONCLUDED"
+                : `SUBJECT #${subjectId}`}
             </p>
           </div>
 
@@ -293,19 +445,16 @@ export default function GladosChat() {
           <div className="flex-1 min-h-0 w-full max-w-[780px] flex flex-col">
             <ChatPanel
               scrollRef={scrollRef}
+              bottomSentinelRef={bottomSentinelRef}
               chatExpanded={chatExpanded}
               showChips={turns === 0 && !isEnded}
               isEnded={isEnded}
-              prob={prob}
-              testsCompleted={testsCompleted}
-              verdictReady={verdictReady}
+              endedPane={endedPane}
+              setEndedPane={setEndedPane}
               endingCode={ending}
-              personScore={personScore}
-              resistanceScore={resistanceScore}
               openingText={openingText}
               openingDone={openingDone}
               displayMsgs={displayMsgs}
-              turns={turns}
               input={input}
               setInput={setInput}
               canSend={canSend}
@@ -322,7 +471,12 @@ export default function GladosChat() {
           subjectId={subjectId}
         />
       ) : (
-        <BottomBar prob={prob} verdictReady={verdictReady} />
+        <BottomBar
+          prob={prob}
+          verdictReady={verdictReady}
+          sessionEnded={isEnded}
+          released={isEndingReleased(ending)}
+        />
       )}
     </div>
   );

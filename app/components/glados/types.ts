@@ -4,7 +4,14 @@ export type DisplayMsg = {
   id: string;
   role: Role;
   content: string;
+  /** Dots-only placeholder */
   isTyping?: boolean;
+  /** Distinct API loading row (accent strip, not typewriter) */
+  isLoading?: boolean;
+  /** API/network failure — show Retry for this user message */
+  isFailure?: boolean;
+  /** Text to resend when Retry is pressed */
+  retryUserText?: string;
 };
 
 export type ChatMessage = {
