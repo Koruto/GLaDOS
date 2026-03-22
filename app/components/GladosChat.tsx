@@ -448,6 +448,7 @@ export default function GladosChat() {
               bottomSentinelRef={bottomSentinelRef}
               chatExpanded={chatExpanded}
               showChips={turns === 0 && !isEnded}
+              showTipStrip={turns === 1 && !isEnded}
               isEnded={isEnded}
               endedPane={endedPane}
               setEndedPane={setEndedPane}

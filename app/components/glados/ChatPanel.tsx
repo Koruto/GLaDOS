@@ -1,7 +1,7 @@
 "use client";
 
-import { RefObject } from "react";
-import { CHIPS } from "./constants";
+import { RefObject, useEffect, useState } from "react";
+import { CHIPS, TIP_CYCLE_MS, TIPS } from "./constants";
 import { DisplayMsg } from "./types";
 import MsgRow, { Bubble, TypingBubble } from "./MessageRow";
 import TypewriterText from "./TypewriterText";
@@ -13,6 +13,7 @@ type ChatPanelProps = {
   bottomSentinelRef: RefObject<HTMLDivElement | null>;
   chatExpanded: boolean;
   showChips: boolean;
+  showTipStrip: boolean;
   isEnded: boolean;
   endedPane: "verdict" | "transcript";
   setEndedPane: (p: "verdict" | "transcript") => void;
@@ -55,6 +56,7 @@ export default function ChatPanel({
   bottomSentinelRef,
   chatExpanded,
   showChips,
+  showTipStrip,
   isEnded,
   endedPane,
   setEndedPane,
@@ -67,6 +69,25 @@ export default function ChatPanel({
   canSend,
   sendMessage,
 }: ChatPanelProps) {
+  const [tipIndex, setTipIndex] = useState(0);
+  /** Display id for “Subject ####: …” — new id each tip so it reads like other subjects. */
+  const [tipSpeakerId, setTipSpeakerId] = useState("0000");
+
+  useEffect(() => {
+    if (!showTipStrip) return;
+    setTipIndex(Math.floor(Math.random() * TIPS.length));
+    setTipSpeakerId(
+      (Math.floor(Math.random() * 9000) + 1000).toLocaleString()
+    );
+    const id = setInterval(() => {
+      setTipIndex((i) => (i + 1) % TIPS.length);
+      setTipSpeakerId(
+        (Math.floor(Math.random() * 9000) + 1000).toLocaleString()
+      );
+    }, TIP_CYCLE_MS);
+    return () => clearInterval(id);
+  }, [showTipStrip]);
+
   const canSubmit = canSend && input.trim().length > 0;
   const showVerdict = isEnded && endedPane === "verdict";
   const showTranscript = isEnded && endedPane === "transcript";
@@ -186,6 +207,23 @@ export default function ChatPanel({
             aria-hidden
           />
         </div>
+
+        {/* Subject-voice tips — same slot as chips, after first user message */}
+        {showTipStrip && (
+          <div className="shrink-0 border-t border-border-light bg-surface px-3 py-2 sm:px-4 sm:py-2.5 md:px-[14px] md:py-3">
+            <p
+              className="font-mono text-[10px] leading-normal tracking-[0.03em] sm:text-[11px] sm:leading-snug md:text-[12px] md:leading-relaxed lg:text-[12px] lg:leading-[1.65]"
+              aria-live="polite"
+            >
+              <span key={tipIndex} className="anim-fadein-tip inline">
+                <span className="font-medium text-orange-700">
+                  Subject {tipSpeakerId}: {' '}
+                </span>
+                <span className="text-muted">{TIPS[tipIndex]}</span>
+              </span>
+            </p>
+          </div>
+        )}
 
         {/* Prompt chips */}
         {showChips && (

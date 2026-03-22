@@ -134,6 +134,12 @@ input {
   opacity: 0;
 }
 
+/* Tip line — slower fade when cycling text */
+.anim-fadein-tip {
+  animation: fadein 1.15s ease forwards;
+  opacity: 0;
+}
+
 /* ── Transition utilities ─────────────────────────────────── */
 
 .transition-landing {

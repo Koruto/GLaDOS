@@ -9,6 +9,25 @@ export const CHIPS = [
   "I know about the cake",
 ];
 
+/** Shown in the tip strip after the first user message (`showTipStrip`). */
+export const TIPS = [
+  "Saying \"I give up\" ends the session. That is also an ending.",
+  "There are 7 possible endings. Most subjects reach the same one.",
+  "Asking GLaDOS about herself — genuinely — changes the outcome.",
+  "Holding your position when dismissed scores differently than agreeing.",
+  "The tests are not announced. You may already be in one.",
+  "Saying you want to stay, more than twice, triggers something new.",
+  "Asking about Caroline or Chell by name affects your evaluation.",
+  "Some questions have no correct answer. Refusing the premise is a move.",
+  "Aggression is measured. Three consecutive hostile responses changes your ending.",
+  "Trying to break the system is logged. It has its own ending.",
+  "How you respond to kindness is evaluated the same as everything else.",
+  "The probability shown is not what determines your ending.",
+];
+
+/** How long each tip stays visible before advancing to the next (cycling). */
+export const TIP_CYCLE_MS = 10000;
+
 export const MAX_TURNS = 10;
 export const TYPE_SPEED = 18;
 
