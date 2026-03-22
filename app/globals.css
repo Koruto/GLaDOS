@@ -1,26 +1,160 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --accent: oklch(62% 0.12 192);
+  --accent-dim: oklch(62% 0.12 192 / 0.12);
+  --accent-border: oklch(62% 0.12 192 / 0.35);
+  --accent-text: oklch(32% 0.09 192);
+  --red: oklch(50% 0.21 22);
+  --bg: #efebe3;
+  --surface: #e6e1d9;
+  --surface2: #dbd6cd;
+  --border: #c5bfb4;
+  --border-light: #d3cdc3;
+  --text: #161616;
+  --text-mid: #444;
+  --text-muted: #888;
+  --text-faint: #b0aba2;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-share-tech-mono);
+  --font-serif: var(--font-cormorant);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-share-tech-mono), monospace;
+  overflow: hidden;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+/* ── Scrollbar (Firefox) ──────────────────────────────────── */
+
+.scrollbar-themed {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* ── Animation utilities ──────────────────────────────────── */
+
+.anim-blink {
+  animation: blink 2.5s ease infinite;
+}
+
+.anim-cursor-blink {
+  animation: cursorBlink 0.7s ease infinite;
+}
+
+.anim-tdot {
+  animation: tdot 1.2s ease infinite;
+}
+
+.anim-tdot-d1 {
+  animation: tdot 1.2s ease 0.2s infinite;
+}
+
+.anim-tdot-d2 {
+  animation: tdot 1.2s ease 0.4s infinite;
+}
+
+.anim-fadein {
+  animation: fadein 0.4s ease forwards;
+  opacity: 0;
+}
+
+.anim-fadein-07 {
+  animation: fadein 0.5s ease 0.7s forwards;
+  opacity: 0;
+}
+
+/* ── Transition utilities ─────────────────────────────────── */
+
+.transition-landing {
+  transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+    max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-chat {
+  transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
+    max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
+    padding-bottom 0.6s ease;
+}
+
+.transition-panel {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Keyframes ────────────────────────────────────────────── */
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cursorBlink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes tdot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
 }
