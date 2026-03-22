@@ -9,7 +9,7 @@ const shareTechMono = Share_Tech_Mono({
 });
 
 const cormorantGaramond = Cormorant_Garamond({
-  weight: ["600", "700"],
+  weight: ["300", "400", "500", "600"],
   style: ["normal", "italic"],
   variable: "--font-cormorant",
   subsets: ["latin"],

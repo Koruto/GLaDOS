@@ -14,6 +14,11 @@ type ChatPanelProps = {
   showChips: boolean;
   isEnded: boolean;
   prob: number;
+  testsCompleted: number;
+  verdictReady: boolean;
+  endingCode: string | null;
+  personScore: number;
+  resistanceScore: number;
   openingText: string;
   openingDone: boolean;
   displayMsgs: DisplayMsg[];
@@ -30,6 +35,11 @@ export default function ChatPanel({
   showChips,
   isEnded,
   prob,
+  testsCompleted,
+  verdictReady,
+  endingCode,
+  personScore,
+  resistanceScore,
   openingText,
   openingDone,
   displayMsgs,
@@ -42,31 +52,38 @@ export default function ChatPanel({
   const canSubmit = canSend && input.trim().length > 0;
 
   return (
-    <div className="w-full max-w-[780px]">
-      <div className="border overflow-hidden rounded-[2px] bg-[var(--surface)] border-[var(--border)]">
+    <div className="flex flex-col h-full w-full max-w-[780px]">
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden rounded-[2px] border border-border bg-surface">
 
         {/* Inner header */}
-        <div className="flex items-center justify-between border-b px-[14px] py-1.5 text-[9px] tracking-[0.2em] bg-[var(--surface2)] border-[var(--border)] text-[var(--text-muted)]">
+        <div className="shrink-0 flex items-center justify-between border-b border-border bg-surface2 px-[14px] py-1.5 text-[9px] tracking-[0.2em] text-mid">
           <div className="flex items-center gap-[7px]">
-            <span className="w-1 h-1 rounded-full shrink-0 bg-[var(--accent)] anim-blink" />
+            <span className="h-1 w-1 shrink-0 rounded-full bg-accent anim-blink" />
             SUBJECT INTERFACE — ACTIVE SESSION
           </div>
-          <span className="text-[9px] tracking-[0.15em] text-[var(--text-faint)]">
-            {turns > 0 ? `EXCHANGE ${turns} OF ${MAX_TURNS}` : ""}
+          <span className="text-[9px] tracking-[0.15em] text-muted">
+            {turns > 0
+              ? `EXCHANGE ${turns} OF ${MAX_TURNS} · TESTS ${testsCompleted}/5${
+                  verdictReady ? " · VERDICT" : ""
+                }`
+              : ""}
           </span>
         </div>
 
-        {/* Messages area */}
+        {/* Messages area — fills all remaining space */}
         <div
           ref={scrollRef}
-          className={`scrollbar-themed transition-panel overflow-y-auto ${
-            chatExpanded
-              ? "min-h-[260px] max-h-[340px] p-4"
-              : "min-h-0 max-h-0 p-0"
+          className={`scrollbar-themed overflow-y-auto flex-1 min-h-0 ${
+            chatExpanded ? "p-4" : "max-h-0 overflow-hidden p-0"
           }`}
         >
           {isEnded ? (
-            <EndingScreen prob={prob} />
+            <EndingScreen
+              prob={prob}
+              endingCode={endingCode}
+              personScore={personScore}
+              resistanceScore={resistanceScore}
+            />
           ) : (
             <>
               {openingText && (
@@ -101,12 +118,12 @@ export default function ChatPanel({
 
         {/* Prompt chips */}
         {showChips && (
-          <div className="px-[14px] py-[10px] border-t flex gap-[7px] flex-wrap border-[var(--border-light)] bg-[var(--surface)]">
+          <div className="shrink-0 flex flex-wrap gap-[7px] border-t border-border-light bg-surface px-[14px] py-[10px]">
             {CHIPS.map((chip) => (
               <button
                 key={chip}
                 onClick={() => sendMessage(chip)}
-                className="text-[9px] tracking-[0.06em] border px-[11px] py-[5px] cursor-pointer transition-all duration-200 rounded-[2px] text-[var(--text-muted)] border-[var(--border)] bg-[var(--bg)] hover:border-[var(--accent-border)] hover:text-[var(--accent-text)] hover:bg-[var(--accent-dim)]"
+                className="cursor-pointer rounded-[2px] border border-border bg-background px-[11px] py-[5px] text-[9px] tracking-[0.06em] text-muted transition-all duration-200 hover:border-accent-border hover:bg-accent-dim hover:text-accent-text"
               >
                 {chip}
               </button>
@@ -115,7 +132,7 @@ export default function ChatPanel({
         )}
 
         {/* Input row */}
-        <div className="flex border-t border-[var(--border)] bg-[var(--surface)]">
+        <div className="shrink-0 flex border-t border-border bg-surface">
           <input
             type="text"
             value={input}
@@ -125,12 +142,12 @@ export default function ChatPanel({
             }}
             placeholder="Enter your case for freedom..."
             disabled={!canSend}
-            className="flex-1 bg-transparent border-none outline-none text-[11px] tracking-[0.04em] px-[14px] py-3 disabled:opacity-60 text-[var(--text)] caret-[var(--accent)]"
+            className="flex-1 border-none bg-transparent px-[14px] py-3 text-[11px] tracking-[0.04em] text-foreground caret-accent outline-none disabled:opacity-60"
           />
           <button
             onClick={() => { if (canSubmit) sendMessage(input); }}
             disabled={!canSubmit}
-            className={`w-[42px] h-[42px] shrink-0 flex items-center justify-center border-none transition-all duration-200 hover:brightness-90 bg-[var(--accent)] ${
+            className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center border-none bg-accent transition-all duration-200 hover:brightness-90 ${
               canSubmit ? "opacity-100 cursor-pointer" : "opacity-25 cursor-default"
             }`}
           >

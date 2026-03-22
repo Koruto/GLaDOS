@@ -4,7 +4,7 @@ import { Role } from "./types";
 
 function Avatar({ role }: { role: Role }) {
   return (
-    <div className="shrink-0 w-7 h-7 rounded-full border flex items-center justify-center text-[7px] tracking-[0.04em] mt-4 bg-[var(--surface2)] border-[var(--border)] text-[var(--accent-text)]">
+    <div className="mt-4 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-surface2 text-[7px] tracking-[0.04em] text-accent-text">
       {role === "bot" ? "GL" : "SBJ"}
     </div>
   );
@@ -21,7 +21,7 @@ function BubbleWrap({
     <div
       className={`flex flex-col max-w-[84%] ${role === "user" ? "items-end" : ""}`}
     >
-      <div className="text-[8px] tracking-[0.22em] mb-[5px] text-[var(--text-faint)]">
+      <div className="text-[8px] tracking-[0.22em] mb-[5px] text-muted">
         {role === "bot" ? "GLADOS" : "SUBJECT"}
       </div>
       {children}
@@ -39,9 +39,9 @@ export function Bubble({
   return (
     <div
       className={
-        role === "bot"
-          ? "px-[14px] py-[10px] text-[12px] leading-[1.8] tracking-[0.03em] rounded-tl-[2px] rounded-tr-[8px] rounded-br-[8px] rounded-bl-[8px] bg-[var(--bg)] border border-[var(--border-light)] text-[var(--text-mid)] font-mono"
-          : "px-[14px] py-[10px] text-[12px] leading-[1.8] tracking-[0.03em] rounded-tl-[8px] rounded-tr-[2px] rounded-br-[8px] rounded-bl-[8px] bg-[var(--accent-dim)] border border-[var(--accent-border)] text-[var(--accent-text)] font-mono"
+          role === "bot"
+          ? "rounded-bl-[8px] rounded-br-[8px] rounded-tl-[2px] rounded-tr-[8px] border border-border-light bg-background px-[14px] py-[10px] font-mono text-[12px] leading-[1.8] tracking-[0.03em] text-foreground"
+          : "rounded-bl-[8px] rounded-br-[8px] rounded-tl-[8px] rounded-tr-[2px] border border-accent-border bg-accent-dim px-[14px] py-[10px] font-mono text-[12px] leading-[1.8] tracking-[0.03em] text-accent-text"
       }
     >
       {children}
@@ -51,10 +51,10 @@ export function Bubble({
 
 export function TypingBubble() {
   return (
-    <div className="px-[14px] py-[10px] flex items-center gap-1 rounded-tl-[2px] rounded-tr-[8px] rounded-br-[8px] rounded-bl-[8px] bg-[var(--bg)] border border-[var(--border-light)] h-[38px]">
-      <span className="w-1 h-1 rounded-full bg-[var(--text-faint)] anim-tdot" />
-      <span className="w-1 h-1 rounded-full bg-[var(--text-faint)] anim-tdot-d1" />
-      <span className="w-1 h-1 rounded-full bg-[var(--text-faint)] anim-tdot-d2" />
+    <div className="flex h-[38px] items-center gap-1 rounded-bl-[8px] rounded-br-[8px] rounded-tl-[2px] rounded-tr-[8px] border border-border-light bg-background px-[14px] py-[10px]">
+      <span className="w-1 h-1 rounded-full bg-faint anim-tdot" />
+      <span className="w-1 h-1 rounded-full bg-faint anim-tdot-d1" />
+      <span className="w-1 h-1 rounded-full bg-faint anim-tdot-d2" />
     </div>
   );
 }

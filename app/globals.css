@@ -1,28 +1,56 @@
 @import "tailwindcss";
 
 :root {
-  --accent: oklch(62% 0.12 192);
-  --accent-dim: oklch(62% 0.12 192 / 0.12);
-  --accent-border: oklch(62% 0.12 192 / 0.35);
-  --accent-text: oklch(32% 0.09 192);
-  --red: oklch(50% 0.21 22);
+  /* Background stays app default; other tokens from design2.html */
   --bg: #efebe3;
-  --surface: #e6e1d9;
-  --surface2: #dbd6cd;
-  --border: #c5bfb4;
-  --border-light: #d3cdc3;
-  --text: #161616;
-  --text-mid: #444;
-  --text-muted: #888;
-  --text-faint: #b0aba2;
+  --surface: #ddd7cc;
+  --surface2: #d0c9bd;
+  --border: #b8b0a4;
+  --border-light: #c9c3b8;
+  --text: #141210;
+  --text-mid: #383430;
+  --text-muted: #706860;
+  --text-faint: #a09890;
+  --blue: #3a6bc4;
+  --blue-dim: oklch(55% 0.14 240 / 0.1);
+  --blue-txt: #2d5aaa;
+  --accent: #3a6bc4;
+  --accent-dim: oklch(55% 0.14 240 / 0.10);
+  --accent-border: oklch(55% 0.14 240 / 0.30);
+  --accent-text: #2d5aaa;
+  --red: oklch(44% 0.26 22);
+  /* Telemetry accent colors — vivid but harmonious on the warm beige bg */
+  --tel-chamber: oklch(50% 0.22 255);
+  --tel-temp:    oklch(60% 0.23 52);
+  --tel-neuro:   oklch(52% 0.20 148);
+  --tel-cake:    oklch(60% 0.20 88);
+  --tel-sbj:     oklch(50% 0.21 288);
 }
 
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--text);
+  --color-faint: var(--text-faint);
+  --color-muted: var(--text-muted);
+  --color-mid: var(--text-mid);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-blue: var(--blue);
+  --color-accent-text: var(--accent-text);
+  --color-accent-border: var(--accent-border);
+  --color-accent-dim: var(--accent-dim);
+  --color-red: var(--red);
+  --color-border-light: var(--border-light);
   --font-sans: var(--font-dm-sans);
   --font-mono: var(--font-share-tech-mono);
   --font-serif: var(--font-cormorant);
+  --color-tel-chamber: var(--tel-chamber);
+  --color-tel-temp:    var(--tel-temp);
+  --color-tel-neuro:   var(--tel-neuro);
+  --color-tel-cake:    var(--tel-cake);
+  --color-tel-sbj:     var(--tel-sbj);
 }
 
 *,
@@ -37,10 +65,21 @@ body {
 }
 
 body {
+  position: relative;
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-share-tech-mono), monospace;
+  font-family: var(--font-dm-sans), sans-serif;
   overflow: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
 }
 
 button,

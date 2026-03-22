@@ -7,10 +7,37 @@ export type DisplayMsg = {
   isTyping?: boolean;
 };
 
-export type ApiMsg = {
+export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
 };
+
+/** @deprecated use ChatMessage */
+export type ApiMsg = ChatMessage;
+
+/** Parses values like "42 %" or "42%" from GLADOS_DATA lines. */
+export function parseProbabilityPct(value: string | undefined): number | null {
+  if (value == null || value === "") return null;
+  const m = String(value).match(/(\d+(?:\.\d+)?)/);
+  return m ? parseFloat(m[1]) : null;
+}
+
+export function parseIntField(
+  value: string | undefined,
+  fallback = 0
+): number {
+  if (value == null || value === "") return fallback;
+  const m = String(value).match(/-?\d+/);
+  if (!m) return fallback;
+  const n = parseInt(m[0], 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+export function parseBoolString(value: string | undefined): boolean {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase() === "true";
+}
 
 export function parseProb(text: string): number | null {
   const m = text.match(/PROBABILITY_OF_RELEASE:\s*([\d.]+)%/);
