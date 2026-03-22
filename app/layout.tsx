@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Cormorant_Garamond, DM_Sans, Share_Tech_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -37,7 +38,10 @@ export default function RootLayout({
       lang="en"
       className={`${shareTechMono.variable} ${cormorantGaramond.variable} ${dmSans.variable} h-full`}
     >
-      <body className="h-full">{children}</body>
+      <body className="h-full">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
