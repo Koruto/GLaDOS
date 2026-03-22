@@ -39,7 +39,7 @@ export function Bubble({
   return (
     <div
       className={
-          role === "bot"
+        role === "bot"
           ? "rounded-bl-[8px] rounded-br-[8px] rounded-tl-[2px] rounded-tr-[8px] border border-border-light bg-background px-[14px] py-[10px] font-mono text-[12px] leading-[1.8] tracking-[0.03em] text-foreground"
           : "rounded-bl-[8px] rounded-br-[8px] rounded-tl-[8px] rounded-tr-[2px] border border-accent-border bg-accent-dim px-[14px] py-[10px] font-mono text-[12px] leading-[1.8] tracking-[0.03em] text-accent-text"
       }

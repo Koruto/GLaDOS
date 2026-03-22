@@ -1,6 +1,7 @@
 "use client";
 
 import { RefObject, useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { CHIPS, TIP_CYCLE_MS, TIPS } from "./constants";
 import { DisplayMsg } from "./types";
 import MsgRow, { Bubble, TypingBubble } from "./MessageRow";
@@ -72,9 +73,12 @@ export default function ChatPanel({
   const [tipIndex, setTipIndex] = useState(0);
   /** Display id for “Subject ####: …” — new id each tip so it reads like other subjects. */
   const [tipSpeakerId, setTipSpeakerId] = useState("0000");
+  const [tipsDismissed, setTipsDismissed] = useState(false);
+
+  const showTips = showTipStrip && !tipsDismissed;
 
   useEffect(() => {
-    if (!showTipStrip) return;
+    if (!showTips) return;
     setTipIndex(Math.floor(Math.random() * TIPS.length));
     setTipSpeakerId(
       (Math.floor(Math.random() * 9000) + 1000).toLocaleString()
@@ -86,7 +90,7 @@ export default function ChatPanel({
       );
     }, TIP_CYCLE_MS);
     return () => clearInterval(id);
-  }, [showTipStrip]);
+  }, [showTips]);
 
   const canSubmit = canSend && input.trim().length > 0;
   const showVerdict = isEnded && endedPane === "verdict";
@@ -208,24 +212,30 @@ export default function ChatPanel({
           />
         </div>
 
-        {/* Subject-voice tips — same slot as chips, after first user message */}
-        {showTipStrip && (
-          <div className="shrink-0 border-t border-border-light bg-surface px-3 py-2 sm:px-4 sm:py-2.5 md:px-[14px] md:py-3">
+        {showTips && (
+          <div className="flex shrink-0 items-center gap-1.5 border-t border-border-light bg-surface px-3 py-2 sm:gap-2 sm:px-4 sm:py-2.5 md:px-[14px] md:py-3">
             <p
-              className="font-mono text-[10px] leading-normal tracking-[0.03em] sm:text-[11px] sm:leading-snug md:text-[12px] md:leading-relaxed lg:text-[12px] lg:leading-[1.65]"
+              className="min-w-0 flex-1 font-mono text-[10px] leading-normal tracking-[0.03em] sm:text-[11px] sm:leading-snug md:text-[12px] md:leading-relaxed lg:text-[12px] lg:leading-[1.65]"
               aria-live="polite"
             >
               <span key={tipIndex} className="anim-fadein-tip inline">
                 <span className="font-medium text-orange-700">
-                  Subject {tipSpeakerId}: {' '}
+                  Subject {tipSpeakerId}:{" "}
                 </span>
                 <span className="text-muted">{TIPS[tipIndex]}</span>
               </span>
             </p>
+            <button
+              type="button"
+              onClick={() => setTipsDismissed(true)}
+              className="shrink-0 cursor-pointer rounded-full p-1 text-mid transition-colors duration-200 hover:bg-border-light hover:text-foreground"
+              aria-label="Dismiss tips"
+            >
+              <X className="size-2.5 sm:size-3" strokeWidth={2} aria-hidden />
+            </button>
           </div>
         )}
 
-        {/* Prompt chips */}
         {showChips && (
           <div className="flex shrink-0 flex-wrap gap-2 border-t border-border-light bg-surface px-[14px] py-2.5 sm:gap-2.5 sm:px-4 sm:py-3 md:gap-3 md:py-3.5">
             {CHIPS.map((chip) => (
